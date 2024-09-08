@@ -8,7 +8,7 @@
 
 /// Allocates a new ListNode on the heap and returns a pointer
 /// to it. Returns NULL if malloc failed.
-ListNode *list_node_new(KeyType key, ValType val, ListNode *next) {
+ListNode *lnode_new(KeyType key, ValType val, ListNode *next) {
   ListNode *node = malloc(sizeof(ListNode));
   if (node == NULL) {
     return NULL;
@@ -20,7 +20,7 @@ ListNode *list_node_new(KeyType key, ValType val, ListNode *next) {
 }
 
 /// Given a ListNode, frees that node and all nodes that come after it.
-void list_node_free_entire(ListNode *list) {
+void lnode_free_entire(ListNode *list) {
   while (list != NULL) {
     ListNode *temp = list;
     list = list->next;
@@ -82,7 +82,7 @@ int htbl_put(HashTable *ht, KeyType key, ValType value) {
   size_t idx = get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
 
-  ListNode *entry = list_node_new(key, value, curr_head);
+  ListNode *entry = lnode_new(key, value, curr_head);
   if (entry == NULL) {
     return -1;
   }
@@ -168,7 +168,7 @@ int htbl_deallocate(HashTable *ht) {
   for (size_t idx = 0; idx < ht->arr_len; idx++) {
     ListNode *bucket = ht->arr[idx];
     if (bucket != NULL) {
-      list_node_free_entire(bucket);
+      lnode_free_entire(bucket);
     }
   }
   free(ht->arr);

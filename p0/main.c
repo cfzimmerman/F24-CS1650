@@ -48,8 +48,8 @@ void test_basic_map() {
 
   int key = 5;
 
-  htbl_put(ht, key, -1);
-  htbl_put(ht, key, -2);
+  htbl_put(ht, key, -19);
+  htbl_put(ht, key, -20);
   assert(htbl_size(ht) == 2);
 
   int num_values = 1;

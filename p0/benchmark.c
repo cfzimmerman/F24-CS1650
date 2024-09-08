@@ -29,7 +29,7 @@ int main(void) {
   struct timeval stop, start;
   gettimeofday(&start, NULL);
 
-  printf("starting 'put'\n");
+  printf("starting put 1\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
     int key = rand();
     int val = rand();
@@ -37,7 +37,7 @@ int main(void) {
     assert(htbl_put(ht, key, val) == 0);
   }
 
-  printf("starting 'get'\n");
+  printf("starting get\n");
   const int NUM_VALS = 10;
   ValType vals[NUM_VALS];
   for (int i = 0; i < NUM_TESTS; i += 1) {
@@ -45,7 +45,22 @@ int main(void) {
     htbl_get(ht, keys[i], vals, NUM_VALS, &num_results);
   }
 
-  printf("starting 'erase'\n");
+  printf("starting erase 1\n");
+  for (int i = 0; i < NUM_TESTS; i += 1) {
+    htbl_erase(ht, keys[i]);
+  }
+
+  assert(htbl_size(ht) == 0);
+
+  printf("starting put 2\n");
+  for (int i = 0; i < NUM_TESTS; i += 1) {
+    int key = rand();
+    int val = rand();
+    keys[i] = key;
+    assert(htbl_put(ht, key, val) == 0);
+  }
+
+  printf("starting erase 2\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
     htbl_erase(ht, keys[i]);
   }
