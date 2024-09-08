@@ -5,26 +5,39 @@
 #import <stddef.h>
 #include <stdint.h>
 
-typedef int keyType;
-typedef int valType;
+typedef int KeyType;
+typedef int ValType;
 
 typedef struct list_node {
-  valType val;
+  KeyType key;
+  ValType val;
   struct list_node *next;
 } ListNode;
 
 typedef struct hashtable {
+  /// How many buckets arr is allocated to handle
   size_t arr_len;
-  ListNode *arr;
-  size_t el_ct;
-} hashtable;
 
-int allocate(hashtable **ht, int size);
-int put(hashtable *ht, keyType key, valType value);
-int get(hashtable *ht, keyType key, valType *values, int num_values,
+  /// An array of ListNode buckets of size arr_len. Buckets are NULL if
+  /// there's currently no list at that location.
+  ListNode **arr;
+
+  /// The number of actual elements in the hash map
+  size_t el_ct;
+
+  /// log2(arr_len). Cached to avoid computing it every time
+  /// we hash a key.
+  uint64_t arr_len_pow2;
+} HashTable;
+
+int allocate(HashTable **ht, int size);
+int put(HashTable *ht, KeyType key, ValType value);
+int get(HashTable *ht, KeyType key, ValType *values, int num_values,
         int *num_results);
-int erase(hashtable *ht, keyType key);
-int deallocate(hashtable *ht);
+int erase(HashTable *ht, KeyType key);
+int deallocate(HashTable *ht);
+
 uint64_t hash(uint64_t key, uint64_t domain);
+uint64_t reserve_for_capacity(int with_capacity);
 
 #endif

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +33,19 @@ void test_hash() {
   return;
 }
 
+void test_reserve_for_capacity() {
+  assert(reserve_for_capacity(256) == 512);
+  assert(reserve_for_capacity(10) == 32);
+  assert(reserve_for_capacity(0) == 0);
+}
+
 // This is where you can implement your own tests for the hash table
 // implementation.
 int main(void) {
+  test_hash();
+  test_reserve_for_capacity();
 
-  hashtable *ht = NULL;
+  HashTable *ht = NULL;
   int size = 10;
   allocate(&ht, size);
 
@@ -47,13 +56,13 @@ int main(void) {
 
   int num_values = 1;
 
-  valType *values = malloc(1 * sizeof(valType));
+  ValType *values = malloc(1 * sizeof(ValType));
 
   int *num_results = NULL;
 
   get(ht, key, values, num_values, num_results);
   if ((*num_results) > num_values) {
-    values = realloc(values, (*num_results) * sizeof(valType));
+    values = realloc(values, (*num_results) * sizeof(ValType));
     get(ht, 0, values, num_values, num_results);
   }
 
@@ -65,8 +74,6 @@ int main(void) {
   erase(ht, 0);
 
   deallocate(ht);
-
-  test_hash();
 
   return 0;
 }
