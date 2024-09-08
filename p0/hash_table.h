@@ -2,8 +2,8 @@
                          // being included more than once.
 #define CS165_HASH_TABLE
 
-#import <stddef.h>
-#include <stdint.h>
+#include "stddef.h"
+#include "stdint.h"
 
 typedef int KeyType;
 typedef int ValType;

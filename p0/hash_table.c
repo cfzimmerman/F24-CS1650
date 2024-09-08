@@ -18,6 +18,15 @@ ListNode *new_list_node(KeyType key, ValType val, ListNode *next) {
   return node;
 }
 
+/// Given a ListNode, frees that node and all nodes that come after it.
+void free_entire_list(ListNode *list) {
+  while (list != NULL) {
+    ListNode *temp = list;
+    list = list->next;
+    free(temp);
+  }
+}
+
 /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
 /// in the table are filled.
 const uint64_t OVERSIZE_FACTOR = 2;
@@ -68,6 +77,7 @@ inline uint64_t get_bucket_idx(HashTable *ht, KeyType key) {
 // It returns an error code, 0 for success and -1 otherwise (e.g., if malloc is
 // called and fails).
 int put(HashTable *ht, KeyType key, ValType value) {
+  assert(ht != NULL);
   size_t idx = get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
 
@@ -92,6 +102,7 @@ int put(HashTable *ht, KeyType key, ValType value) {
 // allocated).
 int get(HashTable *ht, KeyType key, ValType *values, int num_values,
         int *num_results) {
+  assert(ht != NULL);
   (void)ht;
   (void)key;
   (void)values;
@@ -104,6 +115,7 @@ int get(HashTable *ht, KeyType key, ValType *values, int num_values,
 // It returns an error code, 0 for success and -1 otherwise (e.g., if the
 // hashtable is not allocated).
 int erase(HashTable *ht, KeyType key) {
+  assert(ht != NULL);
   (void)ht;
   (void)key;
   return 0;
@@ -112,10 +124,15 @@ int erase(HashTable *ht, KeyType key) {
 // This method frees all memory occupied by the hash table.
 // It returns an error code, 0 for success and -1 otherwise.
 int deallocate(HashTable *ht) {
-  // This line tells the compiler that we know we haven't used the variable
-  // yet so don't issue a warning. You should remove this line once you use
-  // the parameter.
-  (void)ht;
+  assert(ht != NULL);
+  for (size_t idx = 0; idx < ht->arr_len; idx++) {
+    ListNode *bucket = ht->arr[idx];
+    if (bucket != NULL) {
+      free_entire_list(bucket);
+    }
+  }
+  free(ht->arr);
+  free(ht);
   return 0;
 }
 

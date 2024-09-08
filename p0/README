@@ -21,3 +21,7 @@ make benchmark; ./benchmark
 To build everything, you can just type:
 
 make
+
+To run through valgrind:
+
+`valgrind --tool=memcheck --leak-check=full --track-origins=yes ./main`

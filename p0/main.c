@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +21,9 @@ void test_hash() {
       break;
     }
     default: {
-      fprintf(stderr, "Hashed a number other than 0 or 1: %llu -> %llu\n", num,
-              hashed);
+      fprintf(stderr,
+              "Hashed a number other than 0 or 1: %" PRIu64 " -> %" PRIu64 "\n",
+              num, hashed);
       abort();
     }
     }
@@ -54,24 +56,24 @@ int main(void) {
 
   put(ht, key, value);
 
-  int num_values = 1;
+  // int num_values = 1;
 
-  ValType *values = malloc(1 * sizeof(ValType));
+  // ValType *values = malloc(1 * sizeof(ValType));
 
-  int *num_results = NULL;
+  // int *num_results = NULL;
 
-  get(ht, key, values, num_values, num_results);
-  if ((*num_results) > num_values) {
-    values = realloc(values, (*num_results) * sizeof(ValType));
-    get(ht, 0, values, num_values, num_results);
-  }
+  // get(ht, key, values, num_values, num_results);
+  // if ((*num_results) > num_values) {
+  //   values = realloc(values, (*num_results) * sizeof(ValType));
+  //   get(ht, 0, values, num_values, num_results);
+  // }
 
-  for (int i = 0; i < (*num_results); i++) {
-    printf("value of %d is %d \n", i, values[i]);
-  }
-  free(values);
+  // for (int i = 0; i < (*num_results); i++) {
+  //   printf("value of %d is %d \n", i, values[i]);
+  // }
+  // free(values);
 
-  erase(ht, 0);
+  // erase(ht, 0);
 
   deallocate(ht);
 
