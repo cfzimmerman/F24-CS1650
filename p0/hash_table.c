@@ -28,13 +28,42 @@ void lnode_free_entire(ListNode *list) {
   }
 }
 
-/// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
-/// in the table are filled.
-const uint64_t OVERSIZE_FACTOR = 2;
+/// Returns the bounds-checked bucket index a given key hashes to.
+inline uint64_t pr_get_bucket_idx(HashTable *ht, KeyType key) {
+  uint64_t idx = htbl_hash((uint64_t)key, ht->arr_len_pow2);
+  assert(idx < ht->arr_len);
+  return idx;
+}
+
+/// Initializes a list node from the memory pool or mallocs one if all nodes
+/// are currently in use.
+inline ListNode *pr_take_lnode(HashTable *ht, KeyType key, ValType val,
+                               ListNode *next) {
+  ListNode *node = ht->mem_pool;
+  if (node == NULL) {
+    return lnode_new(key, val, next);
+  }
+  ht->mem_pool = node->next;
+  node->key = key;
+  node->val = val;
+  node->next = next;
+  return node;
+}
+
+/// Returns a list node to the hash table's memory pool.
+inline void pr_return_lnode(HashTable *ht, ListNode *node) {
+  assert(node != NULL);
+  node->next = ht->mem_pool;
+  ht->mem_pool = node;
+}
 
 /// Suggests a size for the hash table based on how many elements it's expected
 /// to hold.
 inline uint64_t htbl_decide_reserve(int with_capacity) {
+  /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
+  /// in the table are filled.
+  const uint64_t OVERSIZE_FACTOR = 2;
+
   return pow(2, ceil(log2(abs(with_capacity) * OVERSIZE_FACTOR)));
 }
 
@@ -45,15 +74,32 @@ inline uint64_t htbl_decide_reserve(int with_capacity) {
 int htbl_allocate(HashTable **ht, int with_capacity) {
   uint64_t size = htbl_decide_reserve(with_capacity);
 
+  // Allocate the table itself
   HashTable *table = malloc(sizeof(HashTable));
   if (table == NULL) {
     return -1;
   }
 
+  // Allocate the memory pool of list nodes equal to the expected number of
+  // elements
+  ListNode *mem_pool = NULL;
+  for (int i = 0; i < with_capacity; i++) {
+    ListNode *new_head = lnode_new(0, 0, mem_pool);
+    if (new_head == NULL) {
+      if (mem_pool != NULL) {
+        lnode_free_entire(mem_pool);
+      }
+      return -1;
+    }
+    mem_pool = new_head;
+  }
+
+  // Allocate the hash table bucket list, set every bucket to NULL initially.
   size_t bucket_list_size = sizeof(ListNode *) * size;
   ListNode **buckets = malloc(bucket_list_size);
   if (buckets == NULL) {
     free(table);
+    lnode_free_entire(mem_pool);
     return -1;
   }
   memset((void *)buckets, 0, bucket_list_size);
@@ -62,16 +108,11 @@ int htbl_allocate(HashTable **ht, int with_capacity) {
   table->arr_len = size;
   table->el_ct = 0;
   table->arr_len_pow2 = (uint64_t)floor(log2(size));
+  table->mem_pool = mem_pool;
 
   *ht = table;
 
   return 0;
-}
-
-inline uint64_t get_bucket_idx(HashTable *ht, KeyType key) {
-  uint64_t idx = htbl_hash((uint64_t)key, ht->arr_len_pow2);
-  assert(idx < ht->arr_len);
-  return idx;
 }
 
 // This method inserts a key-value pair into the hash table.
@@ -79,10 +120,10 @@ inline uint64_t get_bucket_idx(HashTable *ht, KeyType key) {
 // called and fails).
 int htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
-  size_t idx = get_bucket_idx(ht, key);
+  size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
 
-  ListNode *entry = lnode_new(key, value, curr_head);
+  ListNode *entry = pr_take_lnode(ht, key, value, curr_head);
   if (entry == NULL) {
     return -1;
   }
@@ -107,7 +148,7 @@ int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
   assert(ht != NULL);
   assert(values != NULL);
   assert(num_results != NULL);
-  size_t idx = get_bucket_idx(ht, key);
+  size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *head = ht->arr[idx];
 
   *num_results = 0;
@@ -131,7 +172,7 @@ int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
 // hashtable is not allocated).
 int htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
-  size_t idx = get_bucket_idx(ht, key);
+  size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *prev = NULL;
   ListNode *cursor = ht->arr[idx];
 
@@ -149,7 +190,7 @@ int htbl_erase(HashTable *ht, KeyType key) {
     }
     ListNode *temp = cursor;
     cursor = cursor->next;
-    free(temp);
+    pr_return_lnode(ht, temp);
     ht->el_ct--;
   }
 
@@ -172,6 +213,9 @@ int htbl_deallocate(HashTable *ht) {
     }
   }
   free(ht->arr);
+  if (ht->mem_pool != NULL) {
+    lnode_free_entire(ht->mem_pool);
+  }
   free(ht);
   return 0;
 }

@@ -28,6 +28,10 @@ typedef struct hashtable {
   /// log2(arr_len). Cached to avoid computing it every time
   /// we hash a key.
   uint64_t arr_len_pow2;
+
+  /// Unused ListNodes that can be reused to avoid unnecessary bucket
+  /// allocations
+  ListNode *mem_pool;
 } HashTable;
 
 int htbl_allocate(HashTable **ht, int size);
