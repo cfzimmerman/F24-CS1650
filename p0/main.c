@@ -10,7 +10,7 @@ void test_hash() {
   uint64_t total = 1000;
   int diff = 0;
   for (uint64_t num = 0; num < total; num++) {
-    uint64_t hashed = hash(num, 1);
+    uint64_t hashed = htbl_hash(num, 1);
     switch (hashed) {
     case 0: {
       diff--;
@@ -36,9 +36,42 @@ void test_hash() {
 }
 
 void test_reserve_for_capacity() {
-  assert(reserve_for_capacity(256) == 512);
-  assert(reserve_for_capacity(10) == 32);
-  assert(reserve_for_capacity(0) == 0);
+  assert(htbl_decide_reserve(256) == 512);
+  assert(htbl_decide_reserve(10) == 32);
+  assert(htbl_decide_reserve(0) == 0);
+}
+
+void test_basic_map() {
+  HashTable *ht = NULL;
+  int size = 10;
+  allocate(&ht, size);
+
+  int key = 5;
+
+  put(ht, key, -1);
+  put(ht, key, -2);
+  assert(htbl_size(ht) == 2);
+
+  int num_values = 1;
+  ValType *values = malloc(num_values * sizeof(ValType));
+  int num_results = 0;
+
+  get(ht, key, values, num_values, &num_results);
+  if (num_results > num_values) {
+    num_values = num_results;
+    values = realloc(values, num_values * sizeof(ValType));
+    get(ht, key, values, num_values, &num_results);
+  }
+
+  for (int i = 0; i < num_results; i++) {
+    printf("%d: (%d, %d) \n", i, key, values[i]);
+  }
+  free(values);
+
+  erase(ht, key);
+  assert(htbl_size(ht) == 0);
+
+  deallocate(ht);
 }
 
 // This is where you can implement your own tests for the hash table
@@ -46,36 +79,7 @@ void test_reserve_for_capacity() {
 int main(void) {
   test_hash();
   test_reserve_for_capacity();
-
-  HashTable *ht = NULL;
-  int size = 10;
-  allocate(&ht, size);
-
-  int key = 0;
-  int value = -1;
-
-  put(ht, key, value);
-
-  // int num_values = 1;
-
-  // ValType *values = malloc(1 * sizeof(ValType));
-
-  // int *num_results = NULL;
-
-  // get(ht, key, values, num_values, num_results);
-  // if ((*num_results) > num_values) {
-  //   values = realloc(values, (*num_results) * sizeof(ValType));
-  //   get(ht, 0, values, num_values, num_results);
-  // }
-
-  // for (int i = 0; i < (*num_results); i++) {
-  //   printf("value of %d is %d \n", i, values[i]);
-  // }
-  // free(values);
-
-  // erase(ht, 0);
-
-  deallocate(ht);
+  test_basic_map();
 
   return 0;
 }

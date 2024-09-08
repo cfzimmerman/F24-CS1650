@@ -2,12 +2,13 @@
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /// Allocates a new ListNode on the heap and returns a pointer
 /// to it. Returns NULL if malloc failed.
-ListNode *new_list_node(KeyType key, ValType val, ListNode *next) {
+ListNode *list_node_new(KeyType key, ValType val, ListNode *next) {
   ListNode *node = malloc(sizeof(ListNode));
   if (node == NULL) {
     return NULL;
@@ -19,7 +20,7 @@ ListNode *new_list_node(KeyType key, ValType val, ListNode *next) {
 }
 
 /// Given a ListNode, frees that node and all nodes that come after it.
-void free_entire_list(ListNode *list) {
+void list_node_free_entire(ListNode *list) {
   while (list != NULL) {
     ListNode *temp = list;
     list = list->next;
@@ -33,7 +34,7 @@ const uint64_t OVERSIZE_FACTOR = 2;
 
 /// Suggests a size for the hash table based on how many elements it's expected
 /// to hold.
-inline uint64_t reserve_for_capacity(int with_capacity) {
+inline uint64_t htbl_decide_reserve(int with_capacity) {
   return pow(2, ceil(log2(abs(with_capacity) * OVERSIZE_FACTOR)));
 }
 
@@ -42,7 +43,7 @@ inline uint64_t reserve_for_capacity(int with_capacity) {
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
 int allocate(HashTable **ht, int with_capacity) {
-  uint64_t size = reserve_for_capacity(with_capacity);
+  uint64_t size = htbl_decide_reserve(with_capacity);
 
   HashTable *table = malloc(sizeof(HashTable));
   if (table == NULL) {
@@ -68,7 +69,7 @@ int allocate(HashTable **ht, int with_capacity) {
 }
 
 inline uint64_t get_bucket_idx(HashTable *ht, KeyType key) {
-  uint64_t idx = hash((uint64_t)key, ht->arr_len_pow2);
+  uint64_t idx = htbl_hash((uint64_t)key, ht->arr_len_pow2);
   assert(idx < ht->arr_len);
   return idx;
 }
@@ -81,11 +82,12 @@ int put(HashTable *ht, KeyType key, ValType value) {
   size_t idx = get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
 
-  ListNode *entry = new_list_node(key, value, curr_head);
+  ListNode *entry = list_node_new(key, value, curr_head);
   if (entry == NULL) {
     return -1;
   }
   ht->arr[idx] = entry;
+  ht->el_ct++;
 
   return 0;
 }
@@ -103,11 +105,24 @@ int put(HashTable *ht, KeyType key, ValType value) {
 int get(HashTable *ht, KeyType key, ValType *values, int num_values,
         int *num_results) {
   assert(ht != NULL);
-  (void)ht;
-  (void)key;
-  (void)values;
-  (void)num_values;
-  (void)num_results;
+  assert(values != NULL);
+  assert(num_results != NULL);
+  size_t idx = get_bucket_idx(ht, key);
+  ListNode *head = ht->arr[idx];
+
+  *num_results = 0;
+  while (head != NULL) {
+    ListNode *prev = head;
+    head = head->next;
+    if (prev->key != key) {
+      continue;
+    }
+    if (*num_results < num_values) {
+      values[*num_results] = prev->val;
+    }
+    (*num_results)++;
+  }
+
   return 0;
 }
 
@@ -116,9 +131,34 @@ int get(HashTable *ht, KeyType key, ValType *values, int num_values,
 // hashtable is not allocated).
 int erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
-  (void)ht;
-  (void)key;
+  size_t idx = get_bucket_idx(ht, key);
+  ListNode *prev = NULL;
+  ListNode *cursor = ht->arr[idx];
+
+  while (cursor != NULL) {
+    if (cursor->key != key) {
+      prev = cursor;
+      cursor = cursor->next;
+      continue;
+    }
+    if (cursor == ht->arr[idx]) {
+      ht->arr[idx] = cursor->next;
+    }
+    if (prev != NULL) {
+      prev->next = cursor->next;
+    }
+    ListNode *temp = cursor;
+    cursor = cursor->next;
+    free(temp);
+    ht->el_ct--;
+  }
+
   return 0;
+}
+
+size_t htbl_size(HashTable *ht) {
+  assert(ht != NULL);
+  return ht->el_ct;
 }
 
 // This method frees all memory occupied by the hash table.
@@ -128,7 +168,7 @@ int deallocate(HashTable *ht) {
   for (size_t idx = 0; idx < ht->arr_len; idx++) {
     ListNode *bucket = ht->arr[idx];
     if (bucket != NULL) {
-      free_entire_list(bucket);
+      list_node_free_entire(bucket);
     }
   }
   free(ht->arr);
@@ -143,6 +183,6 @@ const uint64_t WORD_SIZE = 64;
 
 /// Hashes a 64 bit key into the range `0..(2^domain_pow2)`.
 /// Assumes the host machine's word size is 64 bits.
-inline uint64_t hash(uint64_t key, uint64_t domain_pow2) {
+inline uint64_t htbl_hash(uint64_t key, uint64_t domain_pow2) {
   return (MULTIPLIER * key) >> (WORD_SIZE - domain_pow2);
 }

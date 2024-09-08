@@ -36,8 +36,9 @@ int get(HashTable *ht, KeyType key, ValType *values, int num_values,
         int *num_results);
 int erase(HashTable *ht, KeyType key);
 int deallocate(HashTable *ht);
+size_t htbl_size(HashTable *ht);
 
-uint64_t hash(uint64_t key, uint64_t domain);
-uint64_t reserve_for_capacity(int with_capacity);
+uint64_t htbl_hash(uint64_t key, uint64_t domain);
+uint64_t htbl_decide_reserve(int with_capacity);
 
 #endif
