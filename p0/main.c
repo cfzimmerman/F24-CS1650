@@ -44,23 +44,23 @@ void test_reserve_for_capacity() {
 void test_basic_map() {
   HashTable *ht = NULL;
   int size = 10;
-  allocate(&ht, size);
+  htbl_allocate(&ht, size);
 
   int key = 5;
 
-  put(ht, key, -1);
-  put(ht, key, -2);
+  htbl_put(ht, key, -1);
+  htbl_put(ht, key, -2);
   assert(htbl_size(ht) == 2);
 
   int num_values = 1;
   ValType *values = malloc(num_values * sizeof(ValType));
   int num_results = 0;
 
-  get(ht, key, values, num_values, &num_results);
+  htbl_get(ht, key, values, num_values, &num_results);
   if (num_results > num_values) {
     num_values = num_results;
     values = realloc(values, num_values * sizeof(ValType));
-    get(ht, key, values, num_values, &num_results);
+    htbl_get(ht, key, values, num_values, &num_results);
   }
 
   for (int i = 0; i < num_results; i++) {
@@ -68,10 +68,10 @@ void test_basic_map() {
   }
   free(values);
 
-  erase(ht, key);
+  htbl_erase(ht, key);
   assert(htbl_size(ht) == 0);
 
-  deallocate(ht);
+  htbl_deallocate(ht);
 }
 
 // This is where you can implement your own tests for the hash table

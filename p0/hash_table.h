@@ -30,12 +30,12 @@ typedef struct hashtable {
   uint64_t arr_len_pow2;
 } HashTable;
 
-int allocate(HashTable **ht, int size);
-int put(HashTable *ht, KeyType key, ValType value);
-int get(HashTable *ht, KeyType key, ValType *values, int num_values,
-        int *num_results);
-int erase(HashTable *ht, KeyType key);
-int deallocate(HashTable *ht);
+int htbl_allocate(HashTable **ht, int size);
+int htbl_put(HashTable *ht, KeyType key, ValType value);
+int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
+             int *num_results);
+int htbl_erase(HashTable *ht, KeyType key);
+int htbl_deallocate(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 
 uint64_t htbl_hash(uint64_t key, uint64_t domain);

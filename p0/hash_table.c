@@ -42,7 +42,7 @@ inline uint64_t htbl_decide_reserve(int with_capacity) {
 // The size parameter is the expected number of elements to be inserted.
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
-int allocate(HashTable **ht, int with_capacity) {
+int htbl_allocate(HashTable **ht, int with_capacity) {
   uint64_t size = htbl_decide_reserve(with_capacity);
 
   HashTable *table = malloc(sizeof(HashTable));
@@ -77,7 +77,7 @@ inline uint64_t get_bucket_idx(HashTable *ht, KeyType key) {
 // This method inserts a key-value pair into the hash table.
 // It returns an error code, 0 for success and -1 otherwise (e.g., if malloc is
 // called and fails).
-int put(HashTable *ht, KeyType key, ValType value) {
+int htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
   size_t idx = get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
@@ -102,8 +102,8 @@ int put(HashTable *ht, KeyType key, ValType value) {
 // values that it missed during the first call. This method returns an error
 // code, 0 for success and -1 otherwise (e.g., if the hashtable is not
 // allocated).
-int get(HashTable *ht, KeyType key, ValType *values, int num_values,
-        int *num_results) {
+int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
+             int *num_results) {
   assert(ht != NULL);
   assert(values != NULL);
   assert(num_results != NULL);
@@ -129,7 +129,7 @@ int get(HashTable *ht, KeyType key, ValType *values, int num_values,
 // This method erases all key-value pairs with a given key from the hash table.
 // It returns an error code, 0 for success and -1 otherwise (e.g., if the
 // hashtable is not allocated).
-int erase(HashTable *ht, KeyType key) {
+int htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
   size_t idx = get_bucket_idx(ht, key);
   ListNode *prev = NULL;
@@ -163,7 +163,7 @@ size_t htbl_size(HashTable *ht) {
 
 // This method frees all memory occupied by the hash table.
 // It returns an error code, 0 for success and -1 otherwise.
-int deallocate(HashTable *ht) {
+int htbl_deallocate(HashTable *ht) {
   assert(ht != NULL);
   for (size_t idx = 0; idx < ht->arr_len; idx++) {
     ListNode *bucket = ht->arr[idx];

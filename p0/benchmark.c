@@ -18,7 +18,7 @@ int main(void) {
   int *keys = malloc(NUM_TESTS * sizeof(int));
   assert(keys != NULL);
 
-  assert(allocate(&ht, NUM_TESTS) == 0);
+  assert(htbl_allocate(&ht, NUM_TESTS) == 0);
 
   int seed = 2;
   srand(seed);
@@ -29,24 +29,25 @@ int main(void) {
   struct timeval stop, start;
   gettimeofday(&start, NULL);
 
+  printf("starting 'put'\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    assert(put(ht, key, val) == 0);
+    assert(htbl_put(ht, key, val) == 0);
   }
 
-  printf("Finished 'put', starting 'get'\n");
+  printf("starting 'get'\n");
   const int NUM_VALS = 10;
   ValType vals[NUM_VALS];
   for (int i = 0; i < NUM_TESTS; i += 1) {
     int num_results = 0;
-    get(ht, keys[i], vals, NUM_VALS, &num_results);
+    htbl_get(ht, keys[i], vals, NUM_VALS, &num_results);
   }
 
-  printf("Finished 'get', starting 'erase'\n");
+  printf("starting 'erase'\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
-    erase(ht, keys[i]);
+    htbl_erase(ht, keys[i]);
   }
 
   gettimeofday(&stop, NULL);
@@ -54,7 +55,7 @@ int main(void) {
                 (double)(stop.tv_sec - start.tv_sec);
   printf("Took %f seconds\n", secs);
 
-  assert(deallocate(ht) == 0);
+  assert(htbl_deallocate(ht) == 0);
   free(keys);
 
   return 0;
