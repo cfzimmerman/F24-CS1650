@@ -54,15 +54,11 @@ void htbl_free(HashTable *ht) {
 }
 
 // This method inserts a key-value pair into the hash table.
-// It returns an error code, 0 for success and -1 otherwise (e.g., if malloc is
-// called and fails).
-int htbl_put(HashTable *ht, KeyType key, ValType value) {
+void htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
   Vec *bucket = pr_get_bucket(ht, key);
   vec_push(bucket, (Generic){.unsig = pr_make_key_val(key, value)});
   ht->el_ct++;
-
-  return 0;
 }
 
 // This method retrieves entries with a matching key and stores the
@@ -99,7 +95,7 @@ size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
 // This method erases all key-value pairs with a given key from the hash table.
 // It returns an error code, 0 for success and -1 otherwise (e.g., if the
 // hashtable is not allocated).
-int htbl_erase(HashTable *ht, KeyType key) {
+void htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
   Vec *bucket = pr_get_bucket(ht, key);
 
@@ -115,8 +111,6 @@ int htbl_erase(HashTable *ht, KeyType key) {
     vec_pop(bucket);
     ht->el_ct--;
   }
-
-  return 0;
 }
 
 inline size_t htbl_size(HashTable *ht) {

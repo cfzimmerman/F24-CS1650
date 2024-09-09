@@ -32,8 +32,7 @@ int main(void) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    int put = htbl_put(&ht, key, val);
-    assert(put == 0);
+    htbl_put(&ht, key, val);
   }
 
   printf("starting get\n");
@@ -55,8 +54,7 @@ int main(void) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    int put = htbl_put(&ht, key, val);
-    assert(put == 0);
+    htbl_put(&ht, key, val);
   }
 
   printf("starting erase 2\n");

@@ -6,15 +6,17 @@
 #include "stdint.h"
 #include "vector.h"
 
-typedef int KeyType;
-typedef int ValType;
+// These are for readability, but the hash table absolutely expects
+// these to be signed 32 bit integers.
+typedef int32_t KeyType;
+typedef int32_t ValType;
 
 typedef struct hashtable {
 
   /// The number of actual elements in the hash map
   size_t el_ct;
 
-  /// An array of Vector buckets. Empty buckets are NULL pointers.
+  /// An array of Vector buckets.
   Vec *buckets;
 
   /// How many vectors in the buckets array.
@@ -26,9 +28,9 @@ typedef struct hashtable {
 } HashTable;
 
 HashTable htbl_new(size_t with_capacity);
-int htbl_put(HashTable *ht, KeyType key, ValType value);
+void htbl_put(HashTable *ht, KeyType key, ValType value);
 size_t htbl_get(HashTable *ht, KeyType key, ValType *values, size_t num_values);
-int htbl_erase(HashTable *ht, KeyType key);
+void htbl_erase(HashTable *ht, KeyType key);
 void htbl_free(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 

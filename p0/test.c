@@ -24,7 +24,7 @@ int main(void) {
   for (int i = 0; i < num_tests; i += 1) {
     keys[i] = rand();
     values[i] = rand();
-    assert(htbl_put(&ht, keys[i], values[i]) == 0);
+    htbl_put(&ht, keys[i], values[i]);
     printf("\t(%d -> %d) \n", keys[i], values[i]);
   }
 
@@ -47,7 +47,7 @@ int main(void) {
 
   for (int i = 0; i < num_tests; i += 1) {
     KeyType target_key = keys[i];
-    assert(htbl_erase(&ht, target_key) == 0);
+    htbl_erase(&ht, target_key);
     size_t num_results = htbl_get(&ht, target_key, results, num_values);
     if (num_results != 0) {
       printf(
