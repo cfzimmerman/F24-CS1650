@@ -25,7 +25,7 @@ inline void vec_free(Vec *vec) {
   }
 }
 
-inline void pr_vec_realloc(Vec *vec) {
+static inline void pr_vec_realloc(Vec *vec) {
   size_t new_capacity = vec->capacity * 2;
   if (new_capacity == 0) {
     new_capacity = 4;
@@ -38,24 +38,22 @@ inline void pr_vec_realloc(Vec *vec) {
   vec->capacity = new_capacity;
 }
 
-void vec_push(Vec *vec, Generic el) {
-  if (vec->len == vec->capacity) {
+inline void vec_push(Vec *vec, Generic el) {
+  if (__builtin_expect(vec->len == vec->capacity, false)) {
     pr_vec_realloc(vec);
   }
-  assert(vec->len < vec->capacity);
-  vec->arr[vec->len] = el;
-  vec->len++;
+  // assert(vec->len < vec->capacity);
+  vec->arr[vec->len++] = el;
 }
 
 inline Generic vec_pop(Vec *vec) {
-  assert(vec->len != 0);
-  Generic val = vec->arr[vec->len - 1];
-  vec->len--;
+  // assert(vec->len != 0);
+  Generic val = vec->arr[--vec->len];
   return val;
 }
 
 inline Generic vec_index(Vec *vec, size_t idx) {
-  assert(idx < vec->len);
+  // assert(idx < vec->len);
   return vec->arr[idx];
 }
 

@@ -35,13 +35,6 @@ void test_hash() {
   return;
 }
 
-void test_reserve_for_capacity() {
-  size_t d1 = pr_decide_reserve(256);
-  assert(d1 == 512);
-  assert(pr_decide_reserve(10) == 32);
-  assert(pr_decide_reserve(0) == 0);
-}
-
 void test_basic_map() {
   HashTable ht = htbl_new(10);
   int key = 5;
@@ -97,7 +90,6 @@ void test_kv() {
 int main(void) {
   test_kv();
   test_hash();
-  test_reserve_for_capacity();
   test_basic_map();
 
   return 0;

@@ -17,22 +17,15 @@ inline Vec *pr_get_bucket(HashTable *ht, KeyType key) {
   return &ht->buckets[idx];
 }
 
-/// Suggests a size for the hash table based on how many elements it's expected
-/// to hold.
-inline uint64_t pr_decide_reserve(int with_capacity) {
-  /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
-  /// in the table are filled.
-  const uint64_t OVERSIZE_FACTOR = 2;
-
-  return pow(2, ceil(log2(abs(with_capacity) * OVERSIZE_FACTOR)));
-}
-
 // Initialize the components of a hashtable.
 // The size parameter is the expected number of elements to be inserted.
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
 HashTable htbl_new(size_t with_capacity) {
-  uint64_t size = pr_decide_reserve(with_capacity);
+  uint64_t size = with_capacity * 2;
+  if (size < 8) {
+    size = 8;
+  }
   Vec *buckets = malloc(sizeof(Vec) * size);
   assert(buckets != NULL);
 
@@ -55,9 +48,9 @@ void htbl_free(HashTable *ht) {
 
 // This method inserts a key-value pair into the hash table.
 void htbl_put(HashTable *ht, KeyType key, ValType value) {
-  assert(ht != NULL);
-  Vec *bucket = pr_get_bucket(ht, key);
-  vec_push(bucket, (Generic){.unsig = pr_make_key_val(key, value)});
+  // assert(ht != NULL);
+  vec_push(pr_get_bucket(ht, key),
+           (Generic){.unsig = pr_make_key_val(key, value)});
   ht->el_ct++;
 }
 
@@ -73,8 +66,8 @@ void htbl_put(HashTable *ht, KeyType key, ValType value) {
 // allocated).
 size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
                 size_t num_values) {
-  assert(ht != NULL);
-  assert(values != NULL);
+  // assert(ht != NULL);
+  // assert(values != NULL);
   Vec *bucket = pr_get_bucket(ht, key);
 
   size_t num_results = 0;
@@ -96,14 +89,13 @@ size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
 // It returns an error code, 0 for success and -1 otherwise (e.g., if the
 // hashtable is not allocated).
 void htbl_erase(HashTable *ht, KeyType key) {
-  assert(ht != NULL);
+  // assert(ht != NULL);
   Vec *bucket = pr_get_bucket(ht, key);
 
   size_t idx = 0;
   while (idx < bucket->len) {
     uint64_t kv = vec_index(bucket, idx).unsig;
-    int32_t el_key = pr_parse_key(kv);
-    if (el_key != key) {
+    if (pr_parse_key(kv) != key) {
       idx++;
       continue;
     }

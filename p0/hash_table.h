@@ -35,7 +35,6 @@ void htbl_free(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 
 uint64_t pr_hash(uint64_t key, uint64_t domain);
-uint64_t pr_decide_reserve(int with_capacity);
 
 uint64_t pr_make_key_val(int32_t key, int32_t val);
 int32_t pr_parse_key(uint64_t kv);
