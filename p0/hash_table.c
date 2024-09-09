@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO: Ditch the linked list and memory pool. Make a vector and run that.
+
 /// Allocates a new ListNode on the heap and returns a pointer
 /// to it. Returns NULL if malloc failed.
 ListNode *lnode_new(KeyType key, ValType val, ListNode *next) {
