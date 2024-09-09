@@ -34,15 +34,13 @@ typedef struct hashtable {
   ListNode *mem_pool;
 } HashTable;
 
-int htbl_allocate(HashTable **ht, int size);
+HashTable htbl_new(size_t with_capacity);
 int htbl_put(HashTable *ht, KeyType key, ValType value);
-int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
-             int *num_results);
+size_t htbl_get(HashTable *ht, KeyType key, ValType *values, size_t num_values);
 int htbl_erase(HashTable *ht, KeyType key);
 int htbl_deallocate(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 
 uint64_t htbl_hash(uint64_t key, uint64_t domain);
-uint64_t htbl_decide_reserve(int with_capacity);
 
 #endif

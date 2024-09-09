@@ -3,7 +3,7 @@ CFLAGS = -ggdb3 -W -Wall -Wextra -Werror -O3
 LDFLAGS = -lm
 LIBS =
 
-default: main test benchmark test_vec
+default: main test benchmark 
 
 %.o: %.c %.h
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -15,9 +15,6 @@ benchmark: hash_table.o benchmark.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 test: hash_table.o test.o 
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
-
-test_vec: vector.o test_vec.o 
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 clean:

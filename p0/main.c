@@ -35,50 +35,41 @@ void test_hash() {
   return;
 }
 
-void test_reserve_for_capacity() {
-  assert(htbl_decide_reserve(256) == 512);
-  assert(htbl_decide_reserve(10) == 32);
-  assert(htbl_decide_reserve(0) == 0);
-}
-
 void test_basic_map() {
-  HashTable *ht = NULL;
   int size = 10;
-  htbl_allocate(&ht, size);
+  HashTable ht = htbl_new(size);
 
   int key = 5;
 
-  htbl_put(ht, key, -19);
-  htbl_put(ht, key, -20);
-  assert(htbl_size(ht) == 2);
+  htbl_put(&ht, key, -19);
+  htbl_put(&ht, key, -20);
+  assert(htbl_size(&ht) == 2);
 
-  int num_values = 1;
+  size_t num_values = 1;
   ValType *values = malloc(num_values * sizeof(ValType));
-  int num_results = 0;
 
-  htbl_get(ht, key, values, num_values, &num_results);
+  size_t num_results = htbl_get(&ht, key, values, num_values);
   if (num_results > num_values) {
     num_values = num_results;
     values = realloc(values, num_values * sizeof(ValType));
-    htbl_get(ht, key, values, num_values, &num_results);
+    num_results = htbl_get(&ht, key, values, num_values);
   }
 
-  for (int i = 0; i < num_results; i++) {
-    printf("%d: (%d, %d) \n", i, key, values[i]);
+  for (size_t i = 0; i < num_results; i++) {
+    printf("(%d, %d) \n", key, values[i]);
   }
   free(values);
 
-  htbl_erase(ht, key);
-  assert(htbl_size(ht) == 0);
+  htbl_erase(&ht, key);
+  assert(htbl_size(&ht) == 0);
 
-  htbl_deallocate(ht);
+  htbl_deallocate(&ht);
 }
 
 // This is where you can implement your own tests for the hash table
 // implementation.
 int main(void) {
   test_hash();
-  test_reserve_for_capacity();
   test_basic_map();
 
   return 0;

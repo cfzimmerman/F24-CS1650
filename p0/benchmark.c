@@ -13,12 +13,10 @@
 
 int main(void) {
 
-  HashTable *ht = NULL;
   const int NUM_TESTS = 50000000;
   int *keys = malloc(NUM_TESTS * sizeof(int));
   assert(keys != NULL);
-
-  assert(htbl_allocate(&ht, NUM_TESTS) == 0);
+  HashTable ht = htbl_new(NUM_TESTS);
 
   int seed = 2;
   srand(seed);
@@ -34,35 +32,34 @@ int main(void) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    assert(htbl_put(ht, key, val) == 0);
+    assert(htbl_put(&ht, key, val) == 0);
   }
 
   printf("starting get\n");
   const int NUM_VALS = 10;
   ValType vals[NUM_VALS];
   for (int i = 0; i < NUM_TESTS; i += 1) {
-    int num_results = 0;
-    htbl_get(ht, keys[i], vals, NUM_VALS, &num_results);
+    htbl_get(&ht, keys[i], vals, NUM_VALS);
   }
 
   printf("starting erase 1\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
-    htbl_erase(ht, keys[i]);
+    htbl_erase(&ht, keys[i]);
   }
 
-  assert(htbl_size(ht) == 0);
+  assert(htbl_size(&ht) == 0);
 
   printf("starting put 2\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    assert(htbl_put(ht, key, val) == 0);
+    assert(htbl_put(&ht, key, val) == 0);
   }
 
   printf("starting erase 2\n");
   for (int i = 0; i < NUM_TESTS; i += 1) {
-    htbl_erase(ht, keys[i]);
+    htbl_erase(&ht, keys[i]);
   }
 
   gettimeofday(&stop, NULL);
@@ -70,7 +67,7 @@ int main(void) {
                 (double)(stop.tv_sec - start.tv_sec);
   printf("Took %f seconds\n", secs);
 
-  assert(htbl_deallocate(ht) == 0);
+  assert(htbl_deallocate(&ht) == 0);
   free(keys);
 
   return 0;

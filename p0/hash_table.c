@@ -6,15 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: Ditch the linked list and memory pool. Make a vector and run that.
-
 /// Allocates a new ListNode on the heap and returns a pointer
-/// to it. Returns NULL if malloc failed.
+/// to it.
 ListNode *lnode_new(KeyType key, ValType val, ListNode *next) {
   ListNode *node = malloc(sizeof(ListNode));
-  if (node == NULL) {
-    return NULL;
-  }
+  assert(node != NULL);
   node->key = key;
   node->val = val;
   node->next = next;
@@ -59,62 +55,26 @@ inline void pr_return_lnode(HashTable *ht, ListNode *node) {
   ht->mem_pool = node;
 }
 
-/// Suggests a size for the hash table based on how many elements it's expected
-/// to hold.
-inline uint64_t htbl_decide_reserve(int with_capacity) {
-  /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
-  /// in the table are filled.
-  const uint64_t OVERSIZE_FACTOR = 2;
+HashTable htbl_new(size_t with_capacity) {
+  uint64_t size = with_capacity * 2;
 
-  return pow(2, ceil(log2(abs(with_capacity) * OVERSIZE_FACTOR)));
-}
+  size_t bucket_list_bytes = sizeof(ListNode *) * size;
+  ListNode **buckets = malloc(bucket_list_bytes);
+  assert(buckets != NULL);
+  memset((void *)buckets, 0, bucket_list_bytes);
 
-// Initialize the components of a hashtable.
-// The size parameter is the expected number of elements to be inserted.
-// This method returns an error code, 0 for success and -1 otherwise (e.g., if
-// the parameter passed to the method is not null, if malloc fails, etc).
-int htbl_allocate(HashTable **ht, int with_capacity) {
-  uint64_t size = htbl_decide_reserve(with_capacity);
-
-  // Allocate the table itself
-  HashTable *table = malloc(sizeof(HashTable));
-  if (table == NULL) {
-    return -1;
-  }
-
-  // Allocate the memory pool of list nodes equal to the expected number of
-  // elements
   ListNode *mem_pool = NULL;
-  for (int i = 0; i < with_capacity; i++) {
+  for (size_t i = 0; i < with_capacity; i++) {
     ListNode *new_head = lnode_new(0, 0, mem_pool);
-    if (new_head == NULL) {
-      if (mem_pool != NULL) {
-        lnode_free_entire(mem_pool);
-      }
-      return -1;
-    }
+    assert(new_head != NULL);
     mem_pool = new_head;
   }
 
-  // Allocate the hash table bucket list, set every bucket to NULL initially.
-  size_t bucket_list_size = sizeof(ListNode *) * size;
-  ListNode **buckets = malloc(bucket_list_size);
-  if (buckets == NULL) {
-    free(table);
-    lnode_free_entire(mem_pool);
-    return -1;
-  }
-  memset((void *)buckets, 0, bucket_list_size);
-
-  table->arr = buckets;
-  table->arr_len = size;
-  table->el_ct = 0;
-  table->arr_len_pow2 = (uint64_t)floor(log2(size));
-  table->mem_pool = mem_pool;
-
-  *ht = table;
-
-  return 0;
+  return (HashTable){.mem_pool = mem_pool,
+                     .arr = buckets,
+                     .el_ct = 0,
+                     .arr_len = size,
+                     .arr_len_pow2 = (uint64_t)floor(log2(size))};
 }
 
 // This method inserts a key-value pair into the hash table.
@@ -145,28 +105,27 @@ int htbl_put(HashTable *ht, KeyType key, ValType value) {
 // values that it missed during the first call. This method returns an error
 // code, 0 for success and -1 otherwise (e.g., if the hashtable is not
 // allocated).
-int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
-             int *num_results) {
+size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
+                size_t num_values) {
   assert(ht != NULL);
   assert(values != NULL);
-  assert(num_results != NULL);
   size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *head = ht->arr[idx];
 
-  *num_results = 0;
+  size_t num_results = 0;
   while (head != NULL) {
     ListNode *prev = head;
     head = head->next;
     if (prev->key != key) {
       continue;
     }
-    if (*num_results < num_values) {
-      values[*num_results] = prev->val;
+    if (num_results < num_values) {
+      values[num_results] = prev->val;
     }
-    (*num_results)++;
+    num_results++;
   }
 
-  return 0;
+  return num_results;
 }
 
 // This method erases all key-value pairs with a given key from the hash table.
@@ -218,7 +177,6 @@ int htbl_deallocate(HashTable *ht) {
   if (ht->mem_pool != NULL) {
     lnode_free_entire(ht->mem_pool);
   }
-  free(ht);
   return 0;
 }
 
