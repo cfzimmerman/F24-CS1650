@@ -5,8 +5,8 @@
 #include "stddef.h"
 #include "stdint.h"
 
-typedef int KeyType;
-typedef int ValType;
+typedef int32_t KeyType;
+typedef int32_t ValType;
 
 typedef struct list_node {
   KeyType key;
@@ -35,10 +35,10 @@ typedef struct hashtable {
 } HashTable;
 
 HashTable htbl_new(size_t with_capacity);
-int htbl_put(HashTable *ht, KeyType key, ValType value);
+void htbl_put(HashTable *ht, KeyType key, ValType value);
 size_t htbl_get(HashTable *ht, KeyType key, ValType *values, size_t num_values);
-int htbl_erase(HashTable *ht, KeyType key);
-int htbl_deallocate(HashTable *ht);
+void htbl_erase(HashTable *ht, KeyType key);
+void htbl_free(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 
 uint64_t htbl_hash(uint64_t key, uint64_t domain);

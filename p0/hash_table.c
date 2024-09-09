@@ -80,19 +80,14 @@ HashTable htbl_new(size_t with_capacity) {
 // This method inserts a key-value pair into the hash table.
 // It returns an error code, 0 for success and -1 otherwise (e.g., if malloc is
 // called and fails).
-int htbl_put(HashTable *ht, KeyType key, ValType value) {
+void htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
   size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *curr_head = ht->arr[idx];
 
   ListNode *entry = pr_take_lnode(ht, key, value, curr_head);
-  if (entry == NULL) {
-    return -1;
-  }
   ht->arr[idx] = entry;
   ht->el_ct++;
-
-  return 0;
 }
 
 // This method retrieves entries with a matching key and stores the
@@ -131,7 +126,7 @@ size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
 // This method erases all key-value pairs with a given key from the hash table.
 // It returns an error code, 0 for success and -1 otherwise (e.g., if the
 // hashtable is not allocated).
-int htbl_erase(HashTable *ht, KeyType key) {
+void htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
   size_t idx = pr_get_bucket_idx(ht, key);
   ListNode *prev = NULL;
@@ -154,8 +149,6 @@ int htbl_erase(HashTable *ht, KeyType key) {
     pr_return_lnode(ht, temp);
     ht->el_ct--;
   }
-
-  return 0;
 }
 
 size_t htbl_size(HashTable *ht) {
@@ -165,7 +158,7 @@ size_t htbl_size(HashTable *ht) {
 
 // This method frees all memory occupied by the hash table.
 // It returns an error code, 0 for success and -1 otherwise.
-int htbl_deallocate(HashTable *ht) {
+void htbl_free(HashTable *ht) {
   assert(ht != NULL);
   for (size_t idx = 0; idx < ht->arr_len; idx++) {
     ListNode *bucket = ht->arr[idx];
@@ -177,7 +170,6 @@ int htbl_deallocate(HashTable *ht) {
   if (ht->mem_pool != NULL) {
     lnode_free_entire(ht->mem_pool);
   }
-  return 0;
 }
 
 /// From the Fibonacci hashing segment:

@@ -23,7 +23,7 @@ int main(void) {
   for (int i = 0; i < num_tests; i += 1) {
     keys[i] = rand();
     values[i] = rand();
-    assert(htbl_put(&ht, keys[i], values[i]) == 0);
+    htbl_put(&ht, keys[i], values[i]);
     printf("\t(%d -> %d) \n", keys[i], values[i]);
   }
 
@@ -48,7 +48,7 @@ int main(void) {
   for (int i = 0; i < num_tests; i += 1) {
     KeyType target_key = keys[i];
     num_results = 0;
-    assert(htbl_erase(&ht, target_key) == 0);
+    htbl_erase(&ht, target_key);
     assert(htbl_get(&ht, target_key, results, num_values) == 0);
     if (num_results != 0) {
       printf("Test failed with key %d. Expected it to be erased, but got %d "
@@ -57,7 +57,7 @@ int main(void) {
       return 1;
     }
   }
-  assert(htbl_deallocate(&ht) == 0);
+  htbl_free(&ht);
   printf("Passed tests for erasing.\n");
   printf("All tests have been successfully passed.\n");
   return 0;

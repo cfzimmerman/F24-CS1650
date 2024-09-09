@@ -63,7 +63,7 @@ void test_basic_map() {
   htbl_erase(&ht, key);
   assert(htbl_size(&ht) == 0);
 
-  htbl_deallocate(&ht);
+  htbl_free(&ht);
 }
 
 // This is where you can implement your own tests for the hash table

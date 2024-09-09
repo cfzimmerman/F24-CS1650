@@ -32,7 +32,7 @@ int main(void) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    assert(htbl_put(&ht, key, val) == 0);
+    htbl_put(&ht, key, val);
   }
 
   printf("starting get\n");
@@ -54,7 +54,7 @@ int main(void) {
     int key = rand();
     int val = rand();
     keys[i] = key;
-    assert(htbl_put(&ht, key, val) == 0);
+    htbl_put(&ht, key, val);
   }
 
   printf("starting erase 2\n");
@@ -67,7 +67,7 @@ int main(void) {
                 (double)(stop.tv_sec - start.tv_sec);
   printf("Took %f seconds\n", secs);
 
-  assert(htbl_deallocate(&ht) == 0);
+  htbl_free(&ht);
   free(keys);
 
   return 0;
