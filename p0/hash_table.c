@@ -1,67 +1,25 @@
 #include "hash_table.h"
+#include "vector.h"
 #include <assert.h>
+#include <limits.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: Ditch the linked list and memory pool. Make a vector and run that.
-
-/// Allocates a new ListNode on the heap and returns a pointer
-/// to it. Returns NULL if malloc failed.
-ListNode *lnode_new(KeyType key, ValType val, ListNode *next) {
-  ListNode *node = malloc(sizeof(ListNode));
-  if (node == NULL) {
-    return NULL;
-  }
-  node->key = key;
-  node->val = val;
-  node->next = next;
-  return node;
-}
-
-/// Given a ListNode, frees that node and all nodes that come after it.
-void lnode_free_entire(ListNode *list) {
-  while (list != NULL) {
-    ListNode *temp = list;
-    list = list->next;
-    free(temp);
-  }
-}
-
 /// Returns the bounds-checked bucket index a given key hashes to.
-inline uint64_t pr_get_bucket_idx(HashTable *ht, KeyType key) {
-  uint64_t idx = htbl_hash((uint64_t)key, ht->arr_len_pow2);
-  assert(idx < ht->arr_len);
-  return idx;
-}
-
-/// Initializes a list node from the memory pool or mallocs one if all nodes
-/// are currently in use.
-inline ListNode *pr_take_lnode(HashTable *ht, KeyType key, ValType val,
-                               ListNode *next) {
-  ListNode *node = ht->mem_pool;
-  if (node == NULL) {
-    return lnode_new(key, val, next);
-  }
-  ht->mem_pool = node->next;
-  node->key = key;
-  node->val = val;
-  node->next = next;
-  return node;
-}
-
-/// Returns a list node to the hash table's memory pool.
-inline void pr_return_lnode(HashTable *ht, ListNode *node) {
-  assert(node != NULL);
-  node->next = ht->mem_pool;
-  ht->mem_pool = node;
+/// If the bucket at this location hasn't been instantiated yet, a new
+/// vector is created and placed there.
+inline Vec *pr_get_bucket(HashTable *ht, KeyType key) {
+  uint64_t idx = pr_hash((uint64_t)key, ht->num_buckets_log2);
+  assert(idx < ht->num_buckets);
+  return &ht->buckets[idx];
 }
 
 /// Suggests a size for the hash table based on how many elements it's expected
 /// to hold.
-inline uint64_t htbl_decide_reserve(int with_capacity) {
+inline uint64_t pr_decide_reserve(int with_capacity) {
   /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
   /// in the table are filled.
   const uint64_t OVERSIZE_FACTOR = 2;
@@ -73,48 +31,26 @@ inline uint64_t htbl_decide_reserve(int with_capacity) {
 // The size parameter is the expected number of elements to be inserted.
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
-int htbl_allocate(HashTable **ht, int with_capacity) {
-  uint64_t size = htbl_decide_reserve(with_capacity);
+HashTable htbl_new(size_t with_capacity) {
+  uint64_t size = pr_decide_reserve(with_capacity);
+  Vec *buckets = malloc(sizeof(Vec) * size);
+  assert(buckets != NULL);
 
-  // Allocate the table itself
-  HashTable *table = malloc(sizeof(HashTable));
-  if (table == NULL) {
-    return -1;
+  for (size_t idx = 0; idx < size; idx++) {
+    buckets[idx] = vec_new(0);
   }
 
-  // Allocate the memory pool of list nodes equal to the expected number of
-  // elements
-  ListNode *mem_pool = NULL;
-  for (int i = 0; i < with_capacity; i++) {
-    ListNode *new_head = lnode_new(0, 0, mem_pool);
-    if (new_head == NULL) {
-      if (mem_pool != NULL) {
-        lnode_free_entire(mem_pool);
-      }
-      return -1;
-    }
-    mem_pool = new_head;
+  return (HashTable){.el_ct = 0,
+                     .num_buckets = size,
+                     .num_buckets_log2 = (uint64_t)floor(log2(size)),
+                     .buckets = buckets};
+}
+
+void htbl_free(HashTable *ht) {
+  for (size_t idx = 0; idx < ht->num_buckets; idx++) {
+    vec_free(&ht->buckets[idx]);
   }
-
-  // Allocate the hash table bucket list, set every bucket to NULL initially.
-  size_t bucket_list_size = sizeof(ListNode *) * size;
-  ListNode **buckets = malloc(bucket_list_size);
-  if (buckets == NULL) {
-    free(table);
-    lnode_free_entire(mem_pool);
-    return -1;
-  }
-  memset((void *)buckets, 0, bucket_list_size);
-
-  table->arr = buckets;
-  table->arr_len = size;
-  table->el_ct = 0;
-  table->arr_len_pow2 = (uint64_t)floor(log2(size));
-  table->mem_pool = mem_pool;
-
-  *ht = table;
-
-  return 0;
+  free(ht->buckets);
 }
 
 // This method inserts a key-value pair into the hash table.
@@ -122,14 +58,8 @@ int htbl_allocate(HashTable **ht, int with_capacity) {
 // called and fails).
 int htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
-  size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *curr_head = ht->arr[idx];
-
-  ListNode *entry = pr_take_lnode(ht, key, value, curr_head);
-  if (entry == NULL) {
-    return -1;
-  }
-  ht->arr[idx] = entry;
+  Vec *bucket = pr_get_bucket(ht, key);
+  vec_push(bucket, (Generic){.unsig = pr_make_key_val(key, value)});
   ht->el_ct++;
 
   return 0;
@@ -145,28 +75,25 @@ int htbl_put(HashTable *ht, KeyType key, ValType value) {
 // values that it missed during the first call. This method returns an error
 // code, 0 for success and -1 otherwise (e.g., if the hashtable is not
 // allocated).
-int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
-             int *num_results) {
+size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
+                size_t num_values) {
   assert(ht != NULL);
   assert(values != NULL);
-  assert(num_results != NULL);
-  size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *head = ht->arr[idx];
+  Vec *bucket = pr_get_bucket(ht, key);
 
-  *num_results = 0;
-  while (head != NULL) {
-    ListNode *prev = head;
-    head = head->next;
-    if (prev->key != key) {
+  size_t num_results = 0;
+  for (size_t idx = 0; idx < bucket->len; idx++) {
+    uint64_t kv = bucket->arr[idx].unsig;
+    if (pr_parse_key(kv) != key) {
       continue;
     }
-    if (*num_results < num_values) {
-      values[*num_results] = prev->val;
+    if (num_results < num_values) {
+      values[num_results] = pr_parse_val(kv);
     }
-    (*num_results)++;
+    num_results++;
   }
 
-  return 0;
+  return num_results;
 }
 
 // This method erases all key-value pairs with a given key from the hash table.
@@ -174,52 +101,27 @@ int htbl_get(HashTable *ht, KeyType key, ValType *values, int num_values,
 // hashtable is not allocated).
 int htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
-  size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *prev = NULL;
-  ListNode *cursor = ht->arr[idx];
+  Vec *bucket = pr_get_bucket(ht, key);
 
-  while (cursor != NULL) {
-    if (cursor->key != key) {
-      prev = cursor;
-      cursor = cursor->next;
+  size_t idx = 0;
+  while (idx < bucket->len) {
+    uint64_t kv = vec_index(bucket, idx).unsig;
+    int32_t el_key = pr_parse_key(kv);
+    if (el_key != key) {
+      idx++;
       continue;
     }
-    if (cursor == ht->arr[idx]) {
-      ht->arr[idx] = cursor->next;
-    }
-    if (prev != NULL) {
-      prev->next = cursor->next;
-    }
-    ListNode *temp = cursor;
-    cursor = cursor->next;
-    pr_return_lnode(ht, temp);
+    vec_swap(bucket, idx, bucket->len - 1);
+    vec_pop(bucket);
     ht->el_ct--;
   }
 
   return 0;
 }
 
-size_t htbl_size(HashTable *ht) {
+inline size_t htbl_size(HashTable *ht) {
   assert(ht != NULL);
   return ht->el_ct;
-}
-
-// This method frees all memory occupied by the hash table.
-// It returns an error code, 0 for success and -1 otherwise.
-int htbl_deallocate(HashTable *ht) {
-  assert(ht != NULL);
-  for (size_t idx = 0; idx < ht->arr_len; idx++) {
-    ListNode *bucket = ht->arr[idx];
-    if (bucket != NULL) {
-      lnode_free_entire(bucket);
-    }
-  }
-  free(ht->arr);
-  if (ht->mem_pool != NULL) {
-    lnode_free_entire(ht->mem_pool);
-  }
-  free(ht);
-  return 0;
 }
 
 /// From the Fibonacci hashing segment:
@@ -229,6 +131,24 @@ const uint64_t WORD_SIZE = 64;
 
 /// Hashes a 64 bit key into the range `0..(2^domain_pow2)`.
 /// Assumes the host machine's word size is 64 bits.
-inline uint64_t htbl_hash(uint64_t key, uint64_t domain_pow2) {
+inline uint64_t pr_hash(uint64_t key, uint64_t domain_pow2) {
   return (MULTIPLIER * key) >> (WORD_SIZE - domain_pow2);
+}
+
+/// Sticks two i32s into a u64 with the key in the upper half and
+/// the value in the lower half.
+/// The resulting number is meaningless and should only be used as
+/// an input to one of the parse methods.
+inline uint64_t pr_make_key_val(int32_t key, int32_t val) {
+  return ((uint64_t)(uint32_t)key << 32) | (uint32_t)val;
+}
+
+/// Retrieves the key field from a u64 composed of (key i32, val i32).
+inline int32_t pr_parse_key(uint64_t kv) {
+  return (int32_t)(uint32_t)(kv >> 32);
+}
+
+/// Retrieves the val field from a u64 composed of (key i32, val i32).
+inline int32_t pr_parse_val(uint64_t kv) {
+  return (int32_t)(uint32_t)(kv & UINT32_MAX);
 }

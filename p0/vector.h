@@ -20,7 +20,12 @@ typedef struct vector {
   Generic *arr;
 } Vec;
 
+// TODO: make vec_new cap = 0 lazily allocate!
+
 /// Allocates a new vector with at least the requested capacity.
+///
+/// UNLESS the requested capacity is zero. If it's zero, the vector
+/// doesn't do any malloc (same as Rust Vec::new).
 ///
 /// PANICS if malloc fails.
 Vec vec_new(size_t capacity);
@@ -47,7 +52,7 @@ Generic vec_pop(Vec *vec);
 /// Returns the element at idx.
 ///
 /// PANICS if the index is out of bounds.
-Generic *vec_index(Vec *vec, size_t idx);
+Generic vec_index(Vec *vec, size_t idx);
 
 /// Swaps the values at two indices.
 ///
