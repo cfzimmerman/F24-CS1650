@@ -9,9 +9,6 @@ Vec vec_new(size_t capacity) {
   if (capacity == 0) {
     return (Vec){.capacity = 0, .len = 0, .arr = NULL};
   }
-  if (capacity < 4) {
-    capacity = 4;
-  }
   capacity = (size_t)pow(2., ceil(log2((double)capacity)));
   Generic *arr = malloc(sizeof(Generic) * capacity);
   assert(arr != NULL);
@@ -27,7 +24,7 @@ inline void vec_free(Vec *vec) {
 
 static inline void pr_vec_realloc(Vec *vec) {
   size_t new_capacity = vec->capacity * 2;
-  if (new_capacity == 0) {
+  if (new_capacity < 4) {
     new_capacity = 4;
   }
   assert(new_capacity > vec->capacity);
@@ -48,8 +45,7 @@ inline void vec_push(Vec *vec, Generic el) {
 
 inline Generic vec_pop(Vec *vec) {
   // assert(vec->len != 0);
-  Generic val = vec->arr[--vec->len];
-  return val;
+  return vec->arr[--vec->len];
 }
 
 inline Generic vec_index(Vec *vec, size_t idx) {

@@ -20,12 +20,10 @@ typedef struct vector {
   Generic *arr;
 } Vec;
 
-// TODO: make vec_new cap = 0 lazily allocate!
-
 /// Allocates a new vector with at least the requested capacity.
 ///
 /// UNLESS the requested capacity is zero. If it's zero, the vector
-/// doesn't do any malloc (same as Rust Vec::new).
+/// doesn't do any malloc until pushed (same as Rust Vec::new).
 ///
 /// PANICS if malloc fails.
 Vec vec_new(size_t capacity);

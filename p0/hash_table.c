@@ -22,7 +22,7 @@ inline Vec *pr_get_bucket(HashTable *ht, KeyType key) {
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
 HashTable htbl_new(size_t with_capacity) {
-  uint64_t size = with_capacity * 2;
+  uint64_t size = pow(2., ceil(log2(with_capacity)));
   if (size < 8) {
     size = 8;
   }
@@ -30,7 +30,7 @@ HashTable htbl_new(size_t with_capacity) {
   assert(buckets != NULL);
 
   for (size_t idx = 0; idx < size; idx++) {
-    buckets[idx] = vec_new(0);
+    buckets[idx] = vec_new(4);
   }
 
   return (HashTable){.el_ct = 0,
@@ -64,8 +64,8 @@ void htbl_put(HashTable *ht, KeyType key, ValType value) {
 // values that it missed during the first call. This method returns an error
 // code, 0 for success and -1 otherwise (e.g., if the hashtable is not
 // allocated).
-size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
-                size_t num_values) {
+inline size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
+                       size_t num_values) {
   // assert(ht != NULL);
   // assert(values != NULL);
   Vec *bucket = pr_get_bucket(ht, key);
@@ -99,7 +99,9 @@ void htbl_erase(HashTable *ht, KeyType key) {
       idx++;
       continue;
     }
-    vec_swap(bucket, idx, bucket->len - 1);
+    if (bucket->len > 1) {
+      vec_swap(bucket, idx, bucket->len - 1);
+    }
     vec_pop(bucket);
     ht->el_ct--;
   }
