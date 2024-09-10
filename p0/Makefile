@@ -25,4 +25,4 @@ test_vec: vector.o test_vec.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 clean:
-	rm -f main test benchmark *.o
+	rm -f main test benchmark test_vec *.o
