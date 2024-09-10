@@ -1,12 +1,12 @@
 #include "hash_table.h"
+#include "assert.h"
+#include "limits.h"
+#include "math.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 #include "vector.h"
-#include <assert.h>
-#include <limits.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 /// Returns the bounds-checked bucket index a given key hashes to.
 /// If the bucket at this location hasn't been instantiated yet, a new
