@@ -3,10 +3,6 @@ CFLAGS = -ggdb3 -W -Wall -Wextra -O3
 LDFLAGS = -lm
 LIBS =
 
-# Add CFLAGS `-DNDEBUG` to disable assertions and go way, way faster.
-# Do not expect anything test-only to work with assertions enabled.
-# Everything meant for production use must work with assertions disabled.
-
 default: main test benchmark test_vec
 
 %.o: %.c %.h
