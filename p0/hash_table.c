@@ -17,12 +17,22 @@ inline Vec *pr_get_bucket(HashTable *ht, KeyType key) {
   return &ht->buckets[idx];
 }
 
+/// Suggests a size for the hash table based on how many elements it's expected
+/// to hold.
+inline uint64_t htbl_decide_reserve(size_t with_capacity) {
+  /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
+  /// in the table are filled.
+  const double OVERSIZE_FACTOR = 1.25;
+
+  return pow(2, ceil(log2(with_capacity * OVERSIZE_FACTOR)));
+}
+
 // Initialize the components of a hashtable.
 // The size parameter is the expected number of elements to be inserted.
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if
 // the parameter passed to the method is not null, if malloc fails, etc).
 HashTable htbl_new(size_t with_capacity) {
-  uint64_t size = pow(2., ceil(log2(with_capacity)));
+  uint64_t size = htbl_decide_reserve(with_capacity);
   if (size < 8) {
     size = 8;
   }
@@ -30,7 +40,7 @@ HashTable htbl_new(size_t with_capacity) {
   assert(buckets != NULL);
 
   for (size_t idx = 0; idx < size; idx++) {
-    buckets[idx] = vec_new(4);
+    buckets[idx] = vec_new(0);
   }
 
   return (HashTable){.el_ct = 0,
