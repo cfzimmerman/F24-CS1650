@@ -1,4 +1,6 @@
 #include "hash_table.h"
+#include "chunk_list.h"
+#include "generic.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
@@ -6,24 +8,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-/// Allocates a new ListNode on the heap and returns a pointer
-/// to it.
-ListNode *lnode_new(KeyType key, ValType val, ListNode *next) {
-  ListNode *node = malloc(sizeof(ListNode));
-  assert(node != NULL);
-  node->key = key;
-  node->val = val;
-  node->next = next;
-  return node;
+/// Sticks two i32s into a u64 with the key in the upper half and
+///
+/// the value in the lower half.
+/// The resulting number is meaningless and should only be used as
+/// an input to one of the parse methods.
+inline uint64_t pr_make_key_val(int32_t key, int32_t val) {
+  return ((uint64_t)(uint32_t)key << 32) | (uint32_t)val;
 }
 
-/// Given a ListNode, frees that node and all nodes that come after it.
-void lnode_free_entire(ListNode *list) {
-  while (list != NULL) {
-    ListNode *temp = list;
-    list = list->next;
-    free(temp);
-  }
+/// Retrieves the key field from a u64 composed of (key i32, val i32).
+inline int32_t pr_parse_key(uint64_t kv) {
+  return (int32_t)(uint32_t)(kv >> 32);
+}
+
+/// Retrieves the val field from a u64 composed of (key i32, val i32).
+inline int32_t pr_parse_val(uint64_t kv) {
+  return (int32_t)(uint32_t)(kv & UINT32_MAX);
 }
 
 /// Returns the bounds-checked bucket index a given key hashes to.
@@ -35,37 +36,39 @@ inline uint64_t pr_get_bucket_idx(HashTable *ht, KeyType key) {
 
 /// Initializes a list node from the memory pool or mallocs one if all nodes
 /// are currently in use.
-inline ListNode *pr_take_lnode(HashTable *ht, KeyType key, ValType val,
-                               ListNode *next) {
-  ListNode *node = ht->mem_pool;
+inline ChunkListNode *pr_take_lnode(HashTable *ht, KeyType key, ValType val,
+                                    ChunkListNode *next) {
+  ChunkListNode *node = ht->mem_pool;
+  Generic entry = (Generic){.unsig = pr_make_key_val(key, val)};
   if (node == NULL) {
-    return lnode_new(key, val, next);
+    return chl_node_new(entry, next);
   }
   ht->mem_pool = node->next;
-  node->key = key;
-  node->val = val;
+  node->len = 1;
+  node->arr[0] = entry;
   node->next = next;
   return node;
 }
 
 /// Returns a list node to the hash table's memory pool.
-inline void pr_return_lnode(HashTable *ht, ListNode *node) {
+inline void pr_return_lnode(HashTable *ht, ChunkListNode *node) {
   assert(node != NULL);
   node->next = ht->mem_pool;
   ht->mem_pool = node;
 }
 
 HashTable htbl_new(size_t with_capacity) {
-  uint64_t size = with_capacity * 2;
+  double arr_len_pow2 = ceil(log2(with_capacity * 1.5));
+  size_t size = pow(2., arr_len_pow2);
 
-  size_t bucket_list_bytes = sizeof(ListNode *) * size;
-  ListNode **buckets = malloc(bucket_list_bytes);
+  size_t bucket_list_bytes = sizeof(ChunkListNode *) * size;
+  ChunkListNode **buckets = malloc(bucket_list_bytes);
   assert(buckets != NULL);
   memset((void *)buckets, 0, bucket_list_bytes);
 
-  ListNode *mem_pool = NULL;
+  ChunkListNode *mem_pool = NULL;
   for (size_t i = 0; i < with_capacity; i++) {
-    ListNode *new_head = lnode_new(0, 0, mem_pool);
+    ChunkListNode *new_head = chl_node_new((Generic){.unsig = 0}, mem_pool);
     assert(new_head != NULL);
     mem_pool = new_head;
   }
@@ -74,7 +77,7 @@ HashTable htbl_new(size_t with_capacity) {
                      .arr = buckets,
                      .el_ct = 0,
                      .arr_len = size,
-                     .arr_len_pow2 = (uint64_t)floor(log2(size))};
+                     .arr_len_pow2 = (uint64_t)arr_len_pow2};
 }
 
 // This method inserts a key-value pair into the hash table.
@@ -83,11 +86,20 @@ HashTable htbl_new(size_t with_capacity) {
 void htbl_put(HashTable *ht, KeyType key, ValType value) {
   assert(ht != NULL);
   size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *curr_head = ht->arr[idx];
+  ChunkListNode *node = ht->arr[idx];
 
-  ListNode *entry = pr_take_lnode(ht, key, value, curr_head);
-  ht->arr[idx] = entry;
   ht->el_ct++;
+  Generic entry = (Generic){.unsig = pr_make_key_val(key, value)};
+  while (node != NULL) {
+    if (node->len < CHL_ARR_SIZE) {
+      node->arr[node->len++] = entry;
+      return;
+    }
+    node = node->next;
+  }
+
+  ChunkListNode *new_node = pr_take_lnode(ht, key, value, ht->arr[idx]);
+  ht->arr[idx] = new_node;
 }
 
 // This method retrieves entries with a matching key and stores the
@@ -104,18 +116,16 @@ size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
                 size_t num_values) {
   assert(ht != NULL);
   assert(values != NULL);
-  size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *head = ht->arr[idx];
 
+  ChunkListIter iter = chl_iter_new(ht->arr[pr_get_bucket_idx(ht, key)]);
   size_t num_results = 0;
-  while (head != NULL) {
-    ListNode *prev = head;
-    head = head->next;
-    if (prev->key != key) {
+  Generic entry;
+  while (chl_iter_next(&iter, &entry)) {
+    if (pr_parse_key(entry.unsig) != key) {
       continue;
     }
     if (num_results < num_values) {
-      values[num_results] = prev->val;
+      values[num_results] = pr_parse_val(entry.unsig);
     }
     num_results++;
   }
@@ -129,25 +139,35 @@ size_t htbl_get(HashTable *ht, KeyType key, ValType *values,
 void htbl_erase(HashTable *ht, KeyType key) {
   assert(ht != NULL);
   size_t idx = pr_get_bucket_idx(ht, key);
-  ListNode *prev = NULL;
-  ListNode *cursor = ht->arr[idx];
 
-  while (cursor != NULL) {
-    if (cursor->key != key) {
-      prev = cursor;
-      cursor = cursor->next;
+  ChunkListNode *prev = NULL;
+  ChunkListNode *curr = ht->arr[idx];
+
+  while (curr != NULL) {
+    size_t arr_idx = 0;
+    while (arr_idx < curr->len) {
+      if (pr_parse_key(curr->arr[arr_idx].unsig) != key) {
+        arr_idx++;
+      } else {
+        curr->arr[arr_idx] = curr->arr[--curr->len];
+        ht->el_ct--;
+      }
+    }
+
+    if (curr->len != 0) {
+      prev = curr;
+      curr = curr->next;
       continue;
     }
-    if (cursor == ht->arr[idx]) {
-      ht->arr[idx] = cursor->next;
-    }
+
     if (prev != NULL) {
-      prev->next = cursor->next;
+      prev->next = curr->next;
+    } else {
+      ht->arr[idx] = curr->next;
     }
-    ListNode *temp = cursor;
-    cursor = cursor->next;
+    ChunkListNode *temp = curr;
+    curr = curr->next;
     pr_return_lnode(ht, temp);
-    ht->el_ct--;
   }
 }
 
@@ -161,14 +181,14 @@ size_t htbl_size(HashTable *ht) {
 void htbl_free(HashTable *ht) {
   assert(ht != NULL);
   for (size_t idx = 0; idx < ht->arr_len; idx++) {
-    ListNode *bucket = ht->arr[idx];
+    ChunkListNode *bucket = ht->arr[idx];
     if (bucket != NULL) {
-      lnode_free_entire(bucket);
+      chl_node_free_all(bucket);
     }
   }
   free(ht->arr);
   if (ht->mem_pool != NULL) {
-    lnode_free_entire(ht->mem_pool);
+    chl_node_free_all(ht->mem_pool);
   }
 }
 

@@ -2,17 +2,12 @@
                          // being included more than once.
 #define CS165_HASH_TABLE
 
-#include "stddef.h"
-#include "stdint.h"
+#include "chunk_list.h"
+#include <stddef.h>
+#include <stdint.h>
 
 typedef int32_t KeyType;
 typedef int32_t ValType;
-
-typedef struct list_node {
-  KeyType key;
-  ValType val;
-  struct list_node *next;
-} ListNode;
 
 typedef struct hashtable {
   /// How many buckets arr is allocated to handle
@@ -20,7 +15,7 @@ typedef struct hashtable {
 
   /// An array of ListNode buckets of size arr_len. Buckets are NULL if
   /// there's currently no list at that location.
-  ListNode **arr;
+  ChunkListNode **arr;
 
   /// The number of actual elements in the hash map
   size_t el_ct;
@@ -31,7 +26,7 @@ typedef struct hashtable {
 
   /// Unused ListNodes that can be reused to avoid unnecessary bucket
   /// allocations
-  ListNode *mem_pool;
+  ChunkListNode *mem_pool;
 } HashTable;
 
 HashTable htbl_new(size_t with_capacity);
