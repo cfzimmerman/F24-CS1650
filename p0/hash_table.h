@@ -1,5 +1,4 @@
-#ifndef CS165_HASH_TABLE // This is a header guard. It prevents the header from
-                         // being included more than once.
+#ifndef CS165_HASH_TABLE
 #define CS165_HASH_TABLE
 
 #include "stddef.h"
