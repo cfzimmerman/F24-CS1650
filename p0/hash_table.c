@@ -57,9 +57,18 @@ inline void pr_return_lnode(HashTable *ht, ChunkListNode *node) {
   ht->mem_pool = node;
 }
 
+/// Suggests a size for the hash table based on how many elements it's expected
+/// to hold.
+inline uint64_t htbl_decide_reserve(size_t with_capacity) {
+  /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
+  /// in the table are filled.
+  const double OVERSIZE_FACTOR = 1.5;
+
+  return pow(2, ceil(log2(with_capacity * OVERSIZE_FACTOR)));
+}
+
 HashTable htbl_new(size_t with_capacity) {
-  double arr_len_pow2 = ceil(log2(with_capacity * 1.5));
-  size_t size = pow(2., arr_len_pow2);
+  size_t size = htbl_decide_reserve(with_capacity);
 
   size_t bucket_list_bytes = sizeof(ChunkListNode *) * size;
   ChunkListNode **buckets = malloc(bucket_list_bytes);
@@ -77,7 +86,7 @@ HashTable htbl_new(size_t with_capacity) {
                      .arr = buckets,
                      .el_ct = 0,
                      .arr_len = size,
-                     .arr_len_pow2 = (uint64_t)arr_len_pow2};
+                     .arr_len_pow2 = (uint64_t)log2(size)};
 }
 
 // This method inserts a key-value pair into the hash table.
