@@ -61,12 +61,12 @@ inline void pr_return_lnode(HashTable *ht, ListNode *node) {
 
 /// Suggests a size for the hash table based on how many elements it's expected
 /// to hold.
-inline uint64_t htbl_decide_reserve(int with_capacity) {
+inline uint64_t htbl_decide_reserve(size_t with_capacity) {
   /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
   /// in the table are filled.
-  const uint64_t OVERSIZE_FACTOR = 2;
+  const double OVERSIZE_FACTOR = 1.25;
 
-  return pow(2, ceil(log2(abs(with_capacity) * OVERSIZE_FACTOR)));
+  return pow(2, ceil(log2(with_capacity * OVERSIZE_FACTOR)));
 }
 
 // Initialize the components of a hashtable.

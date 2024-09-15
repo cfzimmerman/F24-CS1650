@@ -43,6 +43,6 @@ int htbl_deallocate(HashTable *ht);
 size_t htbl_size(HashTable *ht);
 
 uint64_t htbl_hash(uint64_t key, uint64_t domain);
-uint64_t htbl_decide_reserve(int with_capacity);
+uint64_t htbl_decide_reserve(size_t with_capacity);
 
 #endif

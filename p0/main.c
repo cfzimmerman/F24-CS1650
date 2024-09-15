@@ -37,7 +37,7 @@ void test_hash() {
 
 void test_reserve_for_capacity() {
   assert(htbl_decide_reserve(256) == 512);
-  assert(htbl_decide_reserve(10) == 32);
+  assert(htbl_decide_reserve(10) == 16);
   assert(htbl_decide_reserve(0) == 0);
 }
 
