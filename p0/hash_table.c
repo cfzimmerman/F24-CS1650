@@ -22,7 +22,7 @@ inline Vec *pr_get_bucket(HashTable *ht, KeyType key) {
 inline uint64_t htbl_decide_reserve(size_t with_capacity) {
   /// Realloc the table if more than `1/OVERSIZE_FACTOR` buckets
   /// in the table are filled.
-  const double OVERSIZE_FACTOR = 1.25;
+  const double OVERSIZE_FACTOR = 0.75;
 
   return pow(2, ceil(log2(with_capacity * OVERSIZE_FACTOR)));
 }
