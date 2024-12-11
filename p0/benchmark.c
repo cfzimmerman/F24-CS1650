@@ -12,23 +12,24 @@
 // make benchmark; ./benchmark
 
 int main(void) {
-
-  const int NUM_TESTS = 50000000;
-  int *keys = malloc(NUM_TESTS * sizeof(int));
-  assert(keys != NULL);
-  HashTable ht = htbl_new(NUM_TESTS);
+  const int VAL_CT = 50000000;
 
   int seed = 2;
   srand(seed);
   printf("Performing stress test. Inserting, getting, and erasing %d "
          "keys.\n",
-         NUM_TESTS);
+         VAL_CT);
+
+  int *keys = malloc(VAL_CT * sizeof(int));
+  assert(keys != NULL);
 
   struct timeval stop, start;
   gettimeofday(&start, NULL);
 
+  HashTable ht = htbl_new(VAL_CT);
+
   printf("starting put 1\n");
-  for (int i = 0; i < NUM_TESTS; i += 1) {
+  for (int i = 0; i < VAL_CT; i += 1) {
     int key = rand();
     int val = rand();
     keys[i] = key;
@@ -38,19 +39,19 @@ int main(void) {
   printf("starting get\n");
   const int NUM_VALS = 10;
   ValType vals[NUM_VALS];
-  for (int i = 0; i < NUM_TESTS; i += 1) {
+  for (int i = 0; i < VAL_CT; i += 1) {
     htbl_get(&ht, keys[i], vals, NUM_VALS);
   }
 
   printf("starting erase 1\n");
-  for (int i = 0; i < NUM_TESTS; i += 1) {
+  for (int i = 0; i < VAL_CT; i += 1) {
     htbl_erase(&ht, keys[i]);
   }
 
   assert(htbl_size(&ht) == 0);
 
   printf("starting put 2\n");
-  for (int i = 0; i < NUM_TESTS; i += 1) {
+  for (int i = 0; i < VAL_CT; i += 1) {
     int key = rand();
     int val = rand();
     keys[i] = key;
@@ -58,16 +59,17 @@ int main(void) {
   }
 
   printf("starting erase 2\n");
-  for (int i = 0; i < NUM_TESTS; i += 1) {
+  for (int i = 0; i < VAL_CT; i += 1) {
     htbl_erase(&ht, keys[i]);
   }
+
+  htbl_free(&ht);
 
   gettimeofday(&stop, NULL);
   double secs = (double)(stop.tv_usec - start.tv_usec) / 1000000 +
                 (double)(stop.tv_sec - start.tv_sec);
   printf("Took %f seconds\n", secs);
 
-  htbl_free(&ht);
   free(keys);
 
   return 0;
