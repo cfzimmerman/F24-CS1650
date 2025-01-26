@@ -1,2 +1,55 @@
 .DS_Store
 **/target
+
+student_outputs
+generated_data
+
+# Ignore everything, then unignore directories and files with 
+# extensions. This is a sneaky way to ignore executables.
+*
+!/**/
+!*.*
+!Makefile
+!Dockerfile
+
+# Database data
+/db/
+
+# Object files
+obj/*
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects
+*.so
+*.so.*
+
+# Executables
+*.out
+bin/*
+
+.deps
+
+#ide stuff
+tags
+Tags
+*.swp
+
+# other
+r*hs # vtune output
+.deps # makefile temps
+.DS_Store
+local*
+
+status.current_container_id
+
+# Experiments
+csvs/
+cg/
+__pycache__
